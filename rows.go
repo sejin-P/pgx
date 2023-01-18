@@ -393,16 +393,8 @@ func ForEachRow(rows Rows, scans []any, fn func() error) (pgconn.CommandTag, err
 	return rows.CommandTag(), nil
 }
 
-// CollectableRow is the subset of Rows methods that a RowToFunc is allowed to call.
-type CollectableRow interface {
-	FieldDescriptions() []pgconn.FieldDescription
-	Scan(dest ...any) error
-	Values() ([]any, error)
-	RawValues() [][]byte
-}
-
 // RowToFunc is a function that scans or otherwise converts row to a T.
-type RowToFunc[T any] func(row CollectableRow) (T, error)
+type RowToFunc[T any] func(row Row) (T, error)
 
 // CollectRows iterates through rows, calling fn for each row, and collecting the results into a slice of T.
 func CollectRows[T any](rows Rows, fn RowToFunc[T]) ([]T, error) {
@@ -450,21 +442,21 @@ func CollectOneRow[T any](rows Rows, fn RowToFunc[T]) (T, error) {
 }
 
 // RowTo returns a T scanned from row.
-func RowTo[T any](row CollectableRow) (T, error) {
+func RowTo[T any](row Row) (T, error) {
 	var value T
 	err := row.Scan(&value)
 	return value, err
 }
 
 // RowTo returns a the address of a T scanned from row.
-func RowToAddrOf[T any](row CollectableRow) (*T, error) {
+func RowToAddrOf[T any](row Row) (*T, error) {
 	var value T
 	err := row.Scan(&value)
 	return &value, err
 }
 
 // RowToMap returns a map scanned from row.
-func RowToMap(row CollectableRow) (map[string]any, error) {
+func RowToMap(row Row) (map[string]any, error) {
 	var value map[string]any
 	err := row.Scan((*mapRowScanner)(&value))
 	return value, err
@@ -489,7 +481,7 @@ func (rs *mapRowScanner) ScanRow(rows Rows) error {
 
 // RowToStructByPos returns a T scanned from row. T must be a struct. T must have the same number a public fields as row
 // has fields. The row and T fields will by matched by position.
-func RowToStructByPos[T any](row CollectableRow) (T, error) {
+func RowToStructByPos[T any](row Row) (T, error) {
 	var value T
 	err := row.Scan(&positionalStructRowScanner{ptrToStruct: &value})
 	return value, err
@@ -497,7 +489,7 @@ func RowToStructByPos[T any](row CollectableRow) (T, error) {
 
 // RowToAddrOfStructByPos returns the address of a T scanned from row. T must be a struct. T must have the same number a
 // public fields as row has fields. The row and T fields will by matched by position.
-func RowToAddrOfStructByPos[T any](row CollectableRow) (*T, error) {
+func RowToAddrOfStructByPos[T any](row Row) (*T, error) {
 	var value T
 	err := row.Scan(&positionalStructRowScanner{ptrToStruct: &value})
 	return &value, err
@@ -549,7 +541,7 @@ func (rs *positionalStructRowScanner) appendScanTargets(dstElemValue reflect.Val
 // RowToStructByName returns a T scanned from row. T must be a struct. T must have the same number of named public
 // fields as row has fields. The row and T fields will by matched by name. The match is case-insensitive. The database
 // column name can be overridden with a "db" struct tag. If the "db" struct tag is "-" then the field will be ignored.
-func RowToStructByName[T any](row CollectableRow) (T, error) {
+func RowToStructByName[T any](row Row) (T, error) {
 	var value T
 	err := row.Scan(&namedStructRowScanner{ptrToStruct: &value})
 	return value, err
@@ -559,7 +551,7 @@ func RowToStructByName[T any](row CollectableRow) (T, error) {
 // of named public fields as row has fields. The row and T fields will by matched by name. The match is
 // case-insensitive. The database column name can be overridden with a "db" struct tag. If the "db" struct tag is "-"
 // then the field will be ignored.
-func RowToAddrOfStructByName[T any](row CollectableRow) (*T, error) {
+func RowToAddrOfStructByName[T any](row Row) (*T, error) {
 	var value T
 	err := row.Scan(&namedStructRowScanner{ptrToStruct: &value})
 	return &value, err
