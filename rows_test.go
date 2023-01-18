@@ -134,7 +134,7 @@ func ExampleForEachRow() {
 func TestCollectRows(t *testing.T) {
 	defaultConnTestRunner.RunTest(context.Background(), t, func(ctx context.Context, t testing.TB, conn *pgx.Conn) {
 		rows, _ := conn.Query(ctx, `select n from generate_series(0, 99) n`)
-		numbers, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (int32, error) {
+		numbers, err := pgx.CollectRows(rows, func(row pgx.Row) (int32, error) {
 			var n int32
 			err := row.Scan(&n)
 			return n, err
@@ -161,7 +161,7 @@ func ExampleCollectRows() {
 	}
 
 	rows, _ := conn.Query(ctx, `select n from generate_series(1, 5) n`)
-	numbers, err := pgx.CollectRows(rows, func(row pgx.CollectableRow) (int32, error) {
+	numbers, err := pgx.CollectRows(rows, func(row pgx.Row) (int32, error) {
 		var n int32
 		err := row.Scan(&n)
 		return n, err
@@ -180,7 +180,7 @@ func ExampleCollectRows() {
 func TestCollectOneRow(t *testing.T) {
 	defaultConnTestRunner.RunTest(context.Background(), t, func(ctx context.Context, t testing.TB, conn *pgx.Conn) {
 		rows, _ := conn.Query(ctx, `select 42`)
-		n, err := pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
+		n, err := pgx.CollectOneRow(rows, func(row pgx.Row) (int32, error) {
 			var n int32
 			err := row.Scan(&n)
 			return n, err
@@ -193,7 +193,7 @@ func TestCollectOneRow(t *testing.T) {
 func TestCollectOneRowNotFound(t *testing.T) {
 	defaultConnTestRunner.RunTest(context.Background(), t, func(ctx context.Context, t testing.TB, conn *pgx.Conn) {
 		rows, _ := conn.Query(ctx, `select 42 where false`)
-		n, err := pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
+		n, err := pgx.CollectOneRow(rows, func(row pgx.Row) (int32, error) {
 			var n int32
 			err := row.Scan(&n)
 			return n, err
@@ -206,7 +206,7 @@ func TestCollectOneRowNotFound(t *testing.T) {
 func TestCollectOneRowIgnoresExtraRows(t *testing.T) {
 	defaultConnTestRunner.RunTest(context.Background(), t, func(ctx context.Context, t testing.TB, conn *pgx.Conn) {
 		rows, _ := conn.Query(ctx, `select n from generate_series(42, 99) n`)
-		n, err := pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (int32, error) {
+		n, err := pgx.CollectOneRow(rows, func(row pgx.Row) (int32, error) {
 			var n int32
 			err := row.Scan(&n)
 			return n, err
@@ -226,7 +226,7 @@ func TestCollectOneRowPrefersPostgreSQLErrorOverErrNoRows(t *testing.T) {
 
 		var name string
 		rows, _ := conn.Query(ctx, `insert into t (name) values ('foo') returning name`)
-		name, err = pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+		name, err = pgx.CollectOneRow(rows, func(row pgx.Row) (string, error) {
 			var n string
 			err := row.Scan(&n)
 			return n, err
@@ -235,7 +235,7 @@ func TestCollectOneRowPrefersPostgreSQLErrorOverErrNoRows(t *testing.T) {
 		require.Equal(t, "foo", name)
 
 		rows, _ = conn.Query(ctx, `insert into t (name) values ('foo') returning name`)
-		name, err = pgx.CollectOneRow(rows, func(row pgx.CollectableRow) (string, error) {
+		name, err = pgx.CollectOneRow(rows, func(row pgx.Row) (string, error) {
 			var n string
 			err := row.Scan(&n)
 			return n, err
